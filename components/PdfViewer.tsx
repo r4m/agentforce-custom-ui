@@ -53,7 +53,7 @@ const PdfViewer = ({ searchText }: { searchText: string }) => {
     (textItem: any) => {
       if (highlightedText) {
         const words = textItem.str.split(/\s+/);
-        const processedWords = words.map(word => {
+        const processedWords = words.map((word: string) => {
           if (remainingHighlight.current.length > 0 && word === remainingHighlight.current[0]) {
             remainingHighlight.current.shift();
             return `<mark style='background-color: yellow;'>${word}</mark>`;
