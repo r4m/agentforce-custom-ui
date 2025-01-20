@@ -22,7 +22,8 @@ const PdfViewer = () => {
     const socket = io(
       process.env.NODE_ENV === "production"
         ? process.env.NEXT_PUBLIC_DOMAIN_PRODUCTION
-        : process.env.NEXT_PUBLIC_DOMAIN_LOCAL
+        : process.env.NEXT_PUBLIC_DOMAIN_LOCAL,
+      { transports: ["websocket", "polling"] }
     );
 
     socket.on("pdf-update", (data) => {
