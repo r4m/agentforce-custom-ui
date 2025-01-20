@@ -14,7 +14,7 @@ app.prepare().then(() => {
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
 
-    if (req.url === "/emit-event" && req.method === "POST") {
+    if (req.url === "/emit-heroku-event" && req.method === "POST") {
       let body = "";
       req.on("data", (chunk) => {
         body += chunk.toString();
