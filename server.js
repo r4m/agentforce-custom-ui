@@ -27,9 +27,9 @@ app.prepare().then(() => {
         console.log("Event received:", event);
 
         io.emit("pdf-update", {
-          fileUrl: File_URL__c,
-          chunk: Chunk__c,
-          sessionId: Session_ID__c,
+          fileUrl: File_URL__c?.string,
+          chunk: Chunk__c?.string,
+          sessionId: Session_ID__c?.string,
         });
 
         res.writeHead(200, { "Content-Type": "application/json" });
