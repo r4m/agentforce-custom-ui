@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import io from "socket.io-client";
+import FancyLoading from "./FancyLoading";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -104,7 +105,7 @@ const PdfViewer = () => {
   }
   
   return (
-    !pdfData.fileUrl ? <div>Loading...</div> :
+    !pdfData.fileUrl ? <FancyLoading /> :
     <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
       <div className="pdf-container mb-4">
         <Document
