@@ -38,7 +38,7 @@ const FancyLoading = () => {
   return (
     <div className="flex flex-col items-center justify-start h-screen p-4">
       <div className="flex flex-col items-center mb-8 mt-8">
-        <div className="relative w-24 h-10 animate-bounce">
+        <div className="relative w-24 h-10">
           <Image
             src="/salesforce-logo.png"
             alt="Salesforce Logo"
