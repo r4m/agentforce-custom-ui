@@ -11,11 +11,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-type PdfViewerProps = {
-  searchText: string;
-};
-
-const PdfViewer: React.FC<PdfViewerProps> = () => {
+const PdfViewer = () => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [highlightedText, setHighlightedText] = useState<string | null>(null);
