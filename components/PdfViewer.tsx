@@ -4,6 +4,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
+import io from "socket.io-client";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -14,16 +15,29 @@ type PdfViewerProps = {
   searchText: string;
 };
 
-const PdfViewer: React.FC<PdfViewerProps> = ({ searchText }) => {
+const PdfViewer: React.FC<PdfViewerProps> = () => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [highlightedText, setHighlightedText] = useState<string | null>(null);
 
+  const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "" });
+
   useEffect(() => {
-    if (searchText) {
-      searchAndHighlightText(searchText);
-    }
-  }, [searchText]);
+    const socket = io(
+      process.env.NODE_ENV === "production"
+        ? process.env.NEXT_PUBLIC_DOMAIN_PRODUCTION
+        : process.env.NEXT_PUBLIC_DOMAIN_LOCAL
+    );
+
+    socket.on("pdf-update", (data) => {
+      console.log("PDF update received:", data);
+      setPdfData(data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     setPageNumber((prevPageNumber) => prevPageNumber);
@@ -33,8 +47,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ searchText }) => {
     setNumPages(numPages);
   }
 
-  async function searchAndHighlightText(text: string) {
-    const pdf = await pdfjs.getDocument('/salesforce_knowledge_implementation_guide.pdf').promise;
+  const searchAndHighlightText = useCallback(async (text: string) => {
+    const pdf = await pdfjs.getDocument(pdfData.fileUrl).promise;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
@@ -47,7 +61,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ searchText }) => {
         break;
       }
     }
-  }
+  }, [pdfData.fileUrl]);
+
+  useEffect(() => {
+    if (pdfData.chunk) {
+      searchAndHighlightText(pdfData.chunk);
+    }
+  }, [pdfData.chunk, searchAndHighlightText]);
 
   const remainingHighlight = useRef<string[] | undefined>(highlightedText?.split(/\s+/));
 
@@ -87,10 +107,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ searchText }) => {
   }
 
   return (
+    !pdfData.fileUrl ? <div>Loading...</div> :
     <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
       <div className="pdf-container mb-4">
         <Document
-          file="/salesforce_knowledge_implementation_guide.pdf"
+          file={pdfData.fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
         >
           <Page pageNumber={pageNumber} customTextRenderer={textRenderer} />

@@ -19,7 +19,7 @@ export default function Home() {
 
       <div className="flex-grow flex flex-col md:flex-row bg-white">
         <aside className="w-full md:w-1/2 flex items-center justify-center p-4">
-          <PdfViewer searchText={"This associates the class with the most recent version of Apex and the API, as well as each managed package."} />
+          <PdfViewer />
         </aside>
 
         <main className="flex-grow flex items-center justify-center p-4">
