@@ -22,7 +22,7 @@ app.prepare().then(() => {
 
       req.on("end", () => {
         const event = JSON.parse(body);
-        const { File_URL__c, Chunk__c, Session_ID__c } = event;
+        const { File_URL__c, Chunk__c, Session_ID__c } = event.data;
 
         console.log("Event received:", event);
 
