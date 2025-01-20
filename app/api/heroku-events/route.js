@@ -37,7 +37,7 @@ if (!io) {
   const PORT = process.env.NODE_ENV === "production" ? process.env.PORT : 3001
   io = new Server(PORT, {
     cors: {
-      origin: process.env.NODE_ENV === "production" ? process.env.DOMAIN_PRODUCTION : process.env.DOMAIN_LOCAL,
+      origin: process.env.NODE_ENV === "production" ? process.env.DOMAIN_PRODUCTION : "http://localhost:3000",
     },
   });
   console.log(`WebSocket server started on port ${PORT}`);

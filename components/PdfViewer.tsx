@@ -20,7 +20,7 @@ const PdfViewer: React.FC<PdfViewerProps> = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [highlightedText, setHighlightedText] = useState<string | null>(null);
 
-  const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "" });
+  const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "", timestamp: Date.now() });
 
   useEffect(() => {
     const socket = io(
@@ -31,7 +31,7 @@ const PdfViewer: React.FC<PdfViewerProps> = () => {
 
     socket.on("pdf-update", (data) => {
       console.log("PDF update received:", data);
-      setPdfData(data);
+      setPdfData({ ...data, timestamp: Date.now() });
     });
 
     return () => {
@@ -67,13 +67,13 @@ const PdfViewer: React.FC<PdfViewerProps> = () => {
     if (pdfData.chunk) {
       searchAndHighlightText(pdfData.chunk);
     }
-  }, [pdfData.chunk, searchAndHighlightText]);
+  }, [pdfData.chunk, searchAndHighlightText, pdfData.timestamp]);
 
   const remainingHighlight = useRef<string[] | undefined>(highlightedText?.split(/\s+/));
 
   useEffect(() => {
     remainingHighlight.current = highlightedText?.split(/\s+/);
-  }, [highlightedText]);
+  }, [highlightedText, pdfData.timestamp]);
 
   const textRenderer = useCallback(
     (textItem: { str: string; }) => {
@@ -105,12 +105,13 @@ const PdfViewer: React.FC<PdfViewerProps> = () => {
       numPages !== null ? Math.min(prevPageNumber + 1, numPages) : prevPageNumber + 1
     );
   }
-
+  
   return (
     !pdfData.fileUrl ? <div>Loading...</div> :
     <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
       <div className="pdf-container mb-4">
         <Document
+          key={pdfData.fileUrl+pdfData.timestamp}
           file={pdfData.fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
         >
