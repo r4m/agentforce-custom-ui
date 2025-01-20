@@ -1,4 +1,4 @@
-import Image from "next/image";
+// import Image from "next/image";
 import Chat from "../components/Crisp";
 import PdfViewer from "../components/PdfViewer";
 

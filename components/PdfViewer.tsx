@@ -1,6 +1,6 @@
 "use client";
 
-import { Document, Page, pdfjs, PDFPageProxy, TextItem, TextContent } from 'react-pdf';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -36,11 +36,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ searchText }) => {
   async function searchAndHighlightText(text: string) {
     const pdf = await pdfjs.getDocument('/salesforce_knowledge_implementation_guide.pdf').promise;
     for (let i = 1; i <= pdf.numPages; i++) {
-      const page: PDFPageProxy = await pdf.getPage(i);
-      const textContent: TextContent = await page.getTextContent();
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
       const textItems = textContent.items
-        .map((item) => (item as TextItem).str)
-        .join(' ');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((item: any) => item.str).join(' ');
       if (textItems.includes(text)) {
         setPageNumber(i);
         setHighlightedText(text);
@@ -56,7 +56,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ searchText }) => {
   }, [highlightedText]);
 
   const textRenderer = useCallback(
-    (textItem: TextItem) => {
+    (textItem: { str: string; }) => {
       if (highlightedText) {
         const words = textItem.str.split(/\s+/);
         const processedWords = words.map((word) => {
