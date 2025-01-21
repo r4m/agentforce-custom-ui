@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@talkjs/react": "^0.1.11",
+    "axios": "^1.7.9",
     "crisp-sdk-web": "^1.0.25",
     "dotenv": "^16.4.7",
+    "event-source-polyfill": "^1.0.31",
     "next": "15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -20,7 +22,8 @@
     "react-pdf": "9.2.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "talkjs": "^0.33.0"
+    "talkjs": "^0.33.0",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
