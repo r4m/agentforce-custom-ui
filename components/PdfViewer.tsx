@@ -1,11 +1,10 @@
 "use client";
 
-import io from "socket.io-client";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useState, useEffect, useCallback, useRef } from "react";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { PDFDocument } from "pdf-lib";
+import io from "socket.io-client";
 import FancyLoading from "./FancyLoading";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -18,24 +17,12 @@ const PdfViewer = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [highlightedText, setHighlightedText] = useState<string | null>(null);
 
-  const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "", fileContent: "", timestamp: Date.now() });
-  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
-
-  useEffect(() => {
-    async function generatePdfFromHtml(htmlContent: string) {
-      const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([595.28, 841.89]); // Dimensioni A4
-      page.drawText(htmlContent, { x: 50, y: 750, size: 12 }); // Modifica per formattazione
-      const pdfBytes = await pdfDoc.save();
-      return new Blob([pdfBytes], { type: "application/pdf" });
-    }
-
-    if (pdfData.fileContent) {
-      generatePdfFromHtml(pdfData.fileContent).then((blob) => {
-        setPdfBlob(blob);
-      });
-    }
-  }, [pdfData.fileContent]);
+  const [pdfData, setPdfData] = useState({
+    fileUrl: "",
+    chunk: "",
+    fileContent: "",
+    timestamp: Date.now(),
+  });
 
   useEffect(() => {
     const socket = io(
@@ -55,38 +42,49 @@ const PdfViewer = () => {
     };
   }, []);
 
-  useEffect(() => {
-    setPageNumber((prevPageNumber) => prevPageNumber);
-  }, [highlightedText]);
-
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-  }
-
-  const searchAndHighlightText = useCallback(async (text: string) => {
-    if (!pdfBlob) {
-      return;
+  const searchAndHighlightTextHtml = useCallback(() => {
+    if (pdfData.fileContent && pdfData.chunk) {
+      const escapedChunk = pdfData.chunk.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape regex
+      const regex = new RegExp(`(${escapedChunk})`, "gi");
+      const highlightedHtml = pdfData.fileContent.replace(
+        regex,
+        `<mark style="background-color: yellow;">$1</mark>`
+      );
+      return highlightedHtml;
     }
-    const pdf = await pdfjs.getDocument(URL.createObjectURL(pdfBlob)).promise;
+    return pdfData.fileContent;
+  }, [pdfData.fileContent, pdfData.chunk]);
+
+  const searchAndHighlightTextPdf = useCallback(async (text: string) => {
+    const pdf = await pdfjs.getDocument(pdfData.fileUrl).promise;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const textItems = textContent.items
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((item: any) => item.str).join(' ');
+        .map((item: any) => item.str)
+        .join(" ");
       if (textItems.includes(text)) {
         setPageNumber(i);
         setHighlightedText(text);
         break;
       }
     }
-  }, [pdfBlob]);
+  }, [pdfData.fileUrl]);
 
   useEffect(() => {
     if (pdfData.chunk) {
-      searchAndHighlightText(pdfData.chunk);
+      if (pdfData.fileContent) {
+        searchAndHighlightTextHtml();
+      } else if (pdfData.fileUrl) {
+        searchAndHighlightTextPdf(pdfData.chunk);
+      }
     }
-  }, [pdfData.chunk, searchAndHighlightText, pdfData.timestamp]);
+  }, [pdfData.chunk, pdfData.fileContent, pdfData.fileUrl, searchAndHighlightTextHtml, searchAndHighlightTextPdf]);
+
+  useEffect(() => {
+    setPageNumber((prevPageNumber) => prevPageNumber);
+  }, [highlightedText]);
 
   const remainingHighlight = useRef<string[] | undefined>(highlightedText?.split(/\s+/));
 
@@ -113,26 +111,34 @@ const PdfViewer = () => {
     [highlightedText]
   );
 
-  function handlePreviousClick(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    setPageNumber((prevPageNumber) => Math.max(prevPageNumber - 1, 1));
-  }
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+  };
 
-  function handleNextClick(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
+  const handlePreviousClick = () => {
+    setPageNumber((prevPageNumber) => Math.max(prevPageNumber - 1, 1));
+  };
+
+  const handleNextClick = () => {
     setPageNumber((prevPageNumber) =>
       numPages !== null ? Math.min(prevPageNumber + 1, numPages) : prevPageNumber + 1
     );
-  }
+  };
 
-  return !pdfBlob ? (
-    <FancyLoading />
-  ) : (
+  return pdfData.fileContent ? (
+    <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
+      <div
+        className="overflow-auto border rounded-lg p-4 bg-white"
+        style={{ height: "600px", width: "100%" }}
+        dangerouslySetInnerHTML={{ __html: searchAndHighlightTextHtml() || "" }}
+      />
+    </div>
+  ) : pdfData.fileUrl ? (
     <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
       <div className="pdf-container mb-4">
         <Document
-          key={pdfData.timestamp}
-          file={URL.createObjectURL(pdfBlob)}
+          key={pdfData.fileUrl + pdfData.timestamp}
+          file={pdfData.fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
         >
           <Page pageNumber={pageNumber} customTextRenderer={textRenderer} />
@@ -155,6 +161,8 @@ const PdfViewer = () => {
         </button>
       </div>
     </div>
+  ) : (
+    <FancyLoading />
   );
 };
 
