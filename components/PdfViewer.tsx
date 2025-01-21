@@ -17,7 +17,7 @@ const PdfViewer = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [highlightedText, setHighlightedText] = useState<string | null>(null);
 
-  const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "", timestamp: Date.now() });
+  const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "", fileContent: "", timestamp: Date.now() });
 
   useEffect(() => {
     const socket = io(

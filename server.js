@@ -27,12 +27,13 @@ app.prepare().then(() => {
 
       req.on("end", () => {
         const event = JSON.parse(body);
-        const { File_URL__c, Chunk__c, Session_ID__c } = event.data;
+        const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = event.data;
 
         console.log("Event received:", event);
 
         io.emit("pdf-update", {
           fileUrl: File_URL__c?.string,
+          fileContent: File_Content__c?.string,
           chunk: Chunk__c?.string,
           sessionId: Session_ID__c?.string,
         });
