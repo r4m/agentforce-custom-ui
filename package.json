@@ -2,6 +2,8 @@
   "name": "agentforce-custom-ui",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "main": "server.js",
   "scripts": {
     "dev": "NODE_ENV=development node server.js",
     "dev:turbopack": "next dev --turbopack",
