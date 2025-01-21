@@ -68,165 +68,200 @@ app.prepare().then(() => {
     });
   });
 
-    // Main namespace for Salesforce Messaging
-    const sfIo = io.of("/salesforce");
-    sfIo.on("connection", (socket) => {
-      console.log("Salesforce WebSocket connected:", socket.id);
+  // Main namespace for Salesforce Messaging
+  const sfIo = io.of("/salesforce");
+  sfIo.on("connection", (socket) => {
+    console.log("Salesforce WebSocket connected:", socket.id);
   
-      socket.on("init-session", async ({ sessionId }) => {
-        // if (!sessionStore.has(sessionId)) {
-          try {
-            const { accessToken, lastEventId } = await generateAccessToken();
-            sessionStore.set(sessionId, { accessToken, lastEventId });
-            console.log(`Session initialized for ${sessionId}`);
-            createConversation(sessionId);
-            setupSSEListener(sessionId);
-          } catch (err) {
-            console.error("Failed to initialize session:", err);
-            socket.emit("error", "Failed to initialize session");
-          }
-        // } else {
-        //   console.log(`Session already exists for ${sessionId}`);
-        // }
-      });
-  
-      socket.on("send-message", async ({ sessionId, content }) => {
-        sendMessage(sessionId, content);
-      });
-  
-      socket.on("disconnect", () => {
-        console.log("Salesforce WebSocket disconnected:", socket.id);
-        sessionStore.forEach((value, key) => {
-          if (value.socketId === socket.id) {
-            sessionStore.delete(key);
-            console.log(`Session ${key} cleaned up.`);
-          }
-        });
-      });
+    socket.on("init-session", async ({ sessionId }) => {
+      // if (!sessionStore.has(sessionId)) {
+        try {
+          const { accessToken, lastEventId } = await generateAccessToken();
+          sessionStore.set(sessionId, { accessToken, lastEventId });
+          console.log(`Session initialized for ${sessionId}`);
+          createConversation(sessionId);
+          setupSSEListener(sessionId);
+        } catch (err) {
+          console.error("Failed to initialize session:", err);
+          socket.emit("internal", {type: "error", data: {content: "Failed to initialize session"}});
+        }
+      // } else {
+      //   console.log(`Session already exists for ${sessionId}`);
+      // }
     });
   
-    // Function to generate access token
-    async function generateAccessToken() {
+    socket.on("send-message", async ({ sessionId, content }) => {
       try {
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/authorization/unauthenticated/access-token`, {
-          orgId: process.env.NEXT_PUBLIC_SF_ORG_ID,
-          esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
-          capabilitiesVersion: "1",
-          platform: "Web",
-        });
-        return {accessToken: response.data.accessToken, lastEventId: response.data.lastEventId};
-      } catch (error) {
-        console.error("Failed to generate access token:", error);
-        return null;
-      }
-    }
-
-    // Function to create a conversation
-    async function createConversation(sessionId) {
-      try {
-        const { accessToken } = sessionStore.get(sessionId) || {};
-        if (!accessToken) {
-          throw new Error("Access token missing for session");
-        }
-
-        const conversationId = uuidv4();
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/conversation`, {
-          esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
-          conversationId,
-        }, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        if (response?.status === 201) {
-          console.log("Conversation created with ID:", conversationId);
-          const sessionData = sessionStore.get(sessionId) || {}; 
-          sessionData.conversationId = conversationId;
-          sessionStore.set(sessionId, sessionData); 
-        }
-        return response;
-      } catch (error) {
-        console.error("Failed to create conversation:", error);
-        return null;
-      }
-    }
-
-    // Function to send a message
-    async function sendMessage(sessionId, content) {
-      try {
-        const { accessToken, conversationId } = sessionStore.get(sessionId) || {};
-        if (!accessToken) {
-          throw new Error("Access token missing for session");
-        }
-
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/conversation/${conversationId}/message`,
-          {
-            message: {
-              id: uuidv4(),
-              messageType: "StaticContentMessage",
-              staticContent: {
-                formatType: "Text",
-                text: content,
-              },
-            },
-            esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
-          },
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-
-        console.log('Message sent to Salesforce:', content);
-        console.log('Response:', response.data);
-
+        await sendMessage(sessionId, content);
       } catch (err) {
-        console.error("Failed to send message to Salesforce:", err);
-        socket.emit("error", "Failed to send message");
+        console.error("Failed to send message:", err);
+        socket.emit("internal", {type: "error", data: {content: "Failed to send message"}});
       }
-    }
+    });
+  
+    socket.on("disconnect", () => {
+      console.log("Salesforce WebSocket disconnected:", socket.id);
+    });
+  });
 
-    // SSE Integration with Salesforce
-    function setupSSEListener(sessionId) {
-      const { accessToken, lastEventId } = sessionStore.get(sessionId) || {};
+  sfIo.on("connection", (socket) => {
+    console.log("Connessioni attive su Salesforce namespace:", sfIo.sockets.size);
+  });
+  
+  // Function to generate access token
+  async function generateAccessToken() {
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/authorization/unauthenticated/access-token`, {
+        orgId: process.env.NEXT_PUBLIC_SF_ORG_ID,
+        esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
+        capabilitiesVersion: "1",
+        platform: "Web",
+      });
+      return {accessToken: response.data.accessToken, lastEventId: response.data.lastEventId};
+    } catch (error) {
+      console.error("Failed to generate access token:", error);
+      return null;
+    }
+  }
+
+  // Function to create a conversation
+  async function createConversation(sessionId) {
+    try {
+      const { accessToken } = sessionStore.get(sessionId) || {};
       if (!accessToken) {
         throw new Error("Access token missing for session");
       }
 
-      const headers = {
-        Accept: "text/event-stream",
-        Authorization: `Bearer ${accessToken}`,
-        "X-Org-Id": process.env.NEXT_PUBLIC_SF_ORG_ID,
-        "Last-Event-ID": lastEventId,
-      };
-  
-      const eventSource = new EventSourcePolyfill(
-        `${process.env.NEXT_PUBLIC_SF_URL}/eventrouter/v1/sse`,
-        { headers }
+      const conversationId = uuidv4();
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/conversation`, {
+        esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
+        conversationId,
+      }, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (response?.status === 201) {
+        console.log("Conversation created with ID:", conversationId);
+        const sessionData = sessionStore.get(sessionId) || {}; 
+        sessionData.conversationId = conversationId;
+        sessionStore.set(sessionId, sessionData); 
+        sfIo.emit("internal", {type: "info", data: {conversationId}});
+      }
+      return response;
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      return null;
+    }
+  }
+
+  // Function to send a message
+  async function sendMessage(sessionId, content) {
+    try {
+      const { accessToken, conversationId } = sessionStore.get(sessionId) || {};
+      if (!accessToken) {
+        throw new Error("Access token missing for session");
+      }
+
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/conversation/${conversationId}/message`,
+        {
+          message: {
+            id: uuidv4(),
+            messageType: "StaticContentMessage",
+            staticContent: {
+              formatType: "Text",
+              text: content,
+            },
+          },
+          esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
+          language: "en",
+        },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      console.log("EventSource instance created:", eventSource.readyState);
-  
-      eventSource.onmessage = (event) => {
-        console.log('Message received from Salesforce!', event.data);
-        const data = JSON.parse(event.data);
-  
-        if (data.conversationEntry?.entryType === "Message") {
-          sfIo.emit("salesforce-message", {
-            content: data.conversationEntry.entryPayload.staticContent.text,
-            sender: data.conversationEntry.sender,
-          });
-        }
-      };
-  
-      eventSource.onopen = () => {
-        console.log("EventSource connection opened.");
-        console.log("EventSource instance created:", eventSource.readyState);
-      };
+      console.log('Message sent to Salesforce:', content);
 
-      eventSource.onerror = (err) => {
-        console.error("SSE Error:", err);
-        eventSource.close();
-      };
+    } catch (err) {
+      console.error("Failed to send message to Salesforce:", err);
     }
+  }
+
+  // SSE Integration with Salesforce
+  function setupSSEListener(sessionId) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { accessToken, lastEventId } = sessionStore.get(sessionId) || {};
+    if (!accessToken) {
+      throw new Error("Access token missing for session");
+    }
+
+    const headers = {
+      Accept: "text/event-stream",
+      Authorization: `Bearer ${accessToken}`,
+      "X-Org-Id": process.env.NEXT_PUBLIC_SF_ORG_ID,
+      // "Last-Event-ID": lastEventId,
+    };
+
+    const eventSource = new EventSourcePolyfill(
+      `${process.env.NEXT_PUBLIC_SF_URL}/eventrouter/v1/sse`,
+      { headers }
+    );
+
+    eventSource.addEventListener("CONVERSATION_ROUTING_RESULT", (event) => {
+      console.log("Routing result event received:", event.data);
+    });
+    
+    eventSource.addEventListener("CONVERSATION_MESSAGE", (event) => {
+      console.log("Message event received:", event.data);
+      const data = JSON.parse(event.data);
+  
+      sfIo.emit("salesforce-message", createConversationEntry(data));
+    });
+
+    eventSource.addEventListener("CONVERSATION_CLOSE_CONVERSATION", () => {
+      console.log("Conversation closed by Salesforce");
+      cleanupSession(sessionId);
+    });
+
+    eventSource.onopen = () => {
+      console.log("EventSource connection opened.");
+      console.log("EventSource instance created:", eventSource.readyState);
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("SSE Error:", err);
+      eventSource.close();
+    };
+  }
+
+  function cleanupSession(sessionId) {
+    sessionStore.delete(sessionId);
+  }
+
+  function createConversationEntry(data) {
+    try {
+        if (typeof data === "object") {
+            const entryPayload = JSON.parse(data.conversationEntry.entryPayload);
+    
+            return {
+                conversationId: data.conversationId,
+                messageId: data.conversationEntry.identifier,
+                content: entryPayload.abstractMessage || entryPayload,
+                messageType: entryPayload.abstractMessage ? entryPayload.abstractMessage.messageType : (entryPayload.routingType || entryPayload.entries[0].operation) ,
+                entryType: entryPayload.entryType,
+                sender: data.conversationEntry.sender,
+                actorName: data.conversationEntry.senderDisplayName ? (data.conversationEntry.senderDisplayName || data.conversationEntry.sender.role) : (entryPayload.entries[0].displayName || entryPayload.entries[0].participant.role),
+                actorType: data.conversationEntry.sender.role,
+                transcriptedTimestamp: data.conversationEntry.transcriptedTimestamp,
+                messageReason: entryPayload.messageReason
+            };
+        } else {
+            throw new Error(`Expected an object to create a new conversation entry but instead, received ${data}`);
+        }
+    } catch (err) {
+        throw new Error(`Something went wrong while creating a conversation entry: ${err}`);
+    }
+  }
 
   server.listen(PORT, (err) => {
     if (err) throw err;
