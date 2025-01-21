@@ -1,14 +1,15 @@
 "use client";
 
-import { Document, Page, pdfjs } from 'react-pdf';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import 'react-pdf/dist/Page/TextLayer.css';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
 import io from "socket.io-client";
+import { Document, Page, pdfjs } from "react-pdf";
+import { useState, useEffect, useCallback, useRef } from "react";
+import "react-pdf/dist/Page/TextLayer.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import { PDFDocument } from "pdf-lib";
 import FancyLoading from "./FancyLoading";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
+  "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url
 ).toString();
 
@@ -18,6 +19,23 @@ const PdfViewer = () => {
   const [highlightedText, setHighlightedText] = useState<string | null>(null);
 
   const [pdfData, setPdfData] = useState({ fileUrl: "", chunk: "", fileContent: "", timestamp: Date.now() });
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+
+  useEffect(() => {
+    async function generatePdfFromHtml(htmlContent: string) {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([595.28, 841.89]); // Dimensioni A4
+      page.drawText(htmlContent, { x: 50, y: 750, size: 12 }); // Modifica per formattazione
+      const pdfBytes = await pdfDoc.save();
+      return new Blob([pdfBytes], { type: "application/pdf" });
+    }
+
+    if (pdfData.fileContent) {
+      generatePdfFromHtml(pdfData.fileContent).then((blob) => {
+        setPdfBlob(blob);
+      });
+    }
+  }, [pdfData.fileContent]);
 
   useEffect(() => {
     const socket = io(
@@ -46,7 +64,10 @@ const PdfViewer = () => {
   }
 
   const searchAndHighlightText = useCallback(async (text: string) => {
-    const pdf = await pdfjs.getDocument(pdfData.fileUrl).promise;
+    if (!pdfBlob) {
+      return;
+    }
+    const pdf = await pdfjs.getDocument(URL.createObjectURL(pdfBlob)).promise;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
@@ -59,7 +80,7 @@ const PdfViewer = () => {
         break;
       }
     }
-  }, [pdfData.fileUrl]);
+  }, [pdfBlob]);
 
   useEffect(() => {
     if (pdfData.chunk) {
@@ -103,14 +124,15 @@ const PdfViewer = () => {
       numPages !== null ? Math.min(prevPageNumber + 1, numPages) : prevPageNumber + 1
     );
   }
-  
-  return (
-    !pdfData.fileUrl ? <FancyLoading /> :
+
+  return !pdfBlob ? (
+    <FancyLoading />
+  ) : (
     <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
       <div className="pdf-container mb-4">
         <Document
-          key={pdfData.fileUrl+pdfData.timestamp}
-          file={pdfData.fileUrl}
+          key={pdfData.timestamp}
+          file={URL.createObjectURL(pdfBlob)}
           onLoadSuccess={onDocumentLoadSuccess}
         >
           <Page pageNumber={pageNumber} customTextRenderer={textRenderer} />
