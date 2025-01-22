@@ -71,7 +71,7 @@ const PdfViewer = () => {
   
       const fuse = new Fuse([plainText], {
         includeMatches: true,
-        threshold: 0.6,
+        threshold: 0.9,
         minMatchCharLength: 5,
       });
   

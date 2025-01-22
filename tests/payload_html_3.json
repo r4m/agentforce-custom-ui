@@ -1,7 +1,7 @@
 {
     "data": {
       "Chunk__c": {
-        "string": "Why is my turbine not producing any energy? <h2>Potential Causes:</h2> ... Nominal battery voltages will vary widely."
+        "string": "<h2>Potential Causes:</h2> <h3>Incorrect output cables:</h3> <p><strong>Cause</strong><br>If your turbine is spinning rapidly but doesn't deliver any electrical current to the batteries, the circuit from the turbine to the batteries may not be complete. In this situation, the turbine may be free-spinning (also called \"off-load\") and may be generating higher voltages than anticipated from the turbine output cables. Check that all the connections between the turbine and the batteries are correct. It may have developed an internal wiring fault which has resulted in a broken circuit. If a fuse or circuit breaker has been fitted to the turbine, ensure that this is correctly closing the circuit.</p> <h3>Incorrect Battery Technology:</h3> <p>Different battery technologies have different rates at which they can absorb power from a wind turbine. Battery age and condition will also affect the rate at which the batteries can absorb power. Older batteries or those in a poor condition will not draw the same power levels from the turbine as newer batteries in good condition. It is important to verify that the correct battery system is installed, as the capacity of the battery can impact energy absorption.</p> <p>For a 1kW turbine, low capacity batteries are recommended, while high capacity batteries are suggested for a 10kW turbine. If the cables or battery system are incorrect, it is advisable to contact Cirrus for assistance from a certified technician.</p>"
       },
       "Conversation_ID__c": {
         "string": ""
