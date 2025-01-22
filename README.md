@@ -1,4 +1,4 @@
-# End-to-End Architecture: Real-Time Document Highlighting Using Heroku Events and Next.js
+# End-to-End Architecture: Real-Time Document Highlighting Using Heroku Events and Next.js
 
 ## Overview
 This project demonstrates how to build a scalable, real-time, event-driven system using Heroku Events, Next.js, Salesforce Platform Events, and WebSocket communication. It integrates Salesforce, Heroku, and Data Cloud to deliver a seamless user experience by highlighting relevant portions of documents in real-time.
