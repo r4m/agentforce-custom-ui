@@ -1,0 +1,24 @@
+{
+    "data": {
+      "Chunk__c": {
+        "string": "Why is my turbine not producing any energy? <h2>Potential Causes:</h2> ... Nominal battery voltages will vary widely."
+      },
+      "Conversation_ID__c": {
+        "string": ""
+      },
+      "CreatedById": "005J6000001iNYVIA2",
+      "CreatedDate": 1737537986920,
+      "File_Content__c": {
+        "string": "<h2>Potential Causes:</h2>\n<h3>Incorrect output cables:</h3>\n<p><strong>Cause</strong><br>If your turbine is spinning rapidly but doesn&#39;t deliver any electrical current to the batteries, the circuit from the turbine to the batteries may not be complete.<br><br>In this situation, the turbine may be free-spinning (also called &quot;off-load&quot;) and may be generating higher voltages than anticipated from the turbine output cables. Check that all the connections between the turbine and the batteries are correct. It may have developed an internal wiring fault which has resulted in a broken circuit. If a fuse or circuit breaker has been fitted to the turbine, ensure that this is correctly closing the circuit.<br><br>Never leave the turbine running in an off-load state as it may cause damage to the turbine during high winds.<br> </p>\n<p><strong>Troubleshooting</strong><br>Ensure correct output cables are installed:</p>\n<p>1kW Turbine: Standard power output cables recommended</p>\n<p>10kW Turbine: Premium power output cables recommended</p>\n<p>If incorrect cables are installed please contact Cirrus to get cables replaced by a certified technician</p>\n<h3>Incorrect Battery Technology:</h3>\n<p>Different battery technologies have different rates at which they can absorb power from a wind turbine. The batteries will draw all of the power possible from a wind turbine until they reach their absorption limit. Generally, more battery capacity can be added to increase the rate at which they can absorb power. Battery age and condition will also affect the rate at which the batteries can absorb power. Older batteries or those in a poor condition will not draw the same power levels from the turbine as newer batteries in good condition.<br><br>Nominal battery voltages will vary widely. For example, a 12V battery system will operate between 11.5 - 15.0 volts. When the turbine is operating at 100 watts, this will equate to 8.7 amps whilst the batteries are at 11.5 volts, but the same 100 watts only equates to 6.66 amps when the batteries are at 15 volts. When using a current measuring device such as an ammeter, the current reading must be qualified against the voltage reading in order to calculate an accurate power output.<br> </p>\n<p><strong>Troubleshooting</strong><br>Ensure correct battery system is installed:</p>\n<p>1kW Turbine: Low Capacity Battery Recommended</p>\n<p>10kW Turbine: High Capacity Battery Recommended</p>\n<p>If incorrect battery system is installed please contact Cirrus to get battery replaced by a certified technician</p>"
+      },
+      "File_URL__c": {
+        "string": "0227f2a2-b5b0-4159-9f07-a7bd0adcc0b5"
+      },
+      "Session_ID__c": {
+        "string": ""
+      },
+      "User_ID__c": {
+        "string": ""
+      }
+    }
+}  

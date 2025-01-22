@@ -72,7 +72,7 @@ const PdfViewer = () => {
       const fuse = new Fuse([plainText], {
         includeMatches: true,
         threshold: 0.6,
-        minMatchCharLength: 30,
+        minMatchCharLength: 5,
       });
   
       const results = fuse.search(normalizedChunk);
