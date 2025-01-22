@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# End-to-End Architecture: Real-Time Document Highlighting Using Heroku Events and Next.js
 
-## Getting Started
+## Overview
+This project demonstrates how to build a scalable, real-time, event-driven system using Heroku Events, Next.js, Salesforce Platform Events, and WebSocket communication. It integrates Salesforce, Heroku, and Data Cloud to deliver a seamless user experience by highlighting relevant portions of documents in real-time.
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Use Case: Enhancing Agentforce with Real-Time Insights
+The use case augments Agentforce by providing users with:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Real-time RAG (Retrieval-Augmented Generation) insights: Users receive contextually relevant responses with highlighted document sections.
+2. Seamless integration with Salesforce Platform Events: Automates communication between Salesforce and Heroku.
+3. Scalable, event-driven architecture: Built using Heroku's real-time eventing platform.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How It Works
 
-## Learn More
+1. User Interaction in Agentforce:
 
-To learn more about Next.js, take a look at the following resources:
+- A user asks a question in Agentforce.
+- Agentforce performs a RAG operation on documents stored in Data Cloud and generates a response.
+- The response is saved in a custom Salesforce object (`Agentforce_RAG_Response__c`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Platform Event Trigger:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Saving Agentforce_RAG_Response__c triggers a Salesforce Platform Event (`Agentforce_RAG_Response_Event__e`).
 
-## Deploy on Vercel
+3. Heroku Events Subscription:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+A Heroku subscription listens for this platform event and processes the payload.
+The Heroku Events add-on is configured to subscribe to `Agentforce_RAG_Response_Event__e`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. WebSocket Communication:
+
+The Heroku application publishes the event payload to a custom server's `/emit-heroku-event` endpoint.
+The server emits the data via WebSockets to the Next.js frontend.
+
+5. Real-Time Document Rendering:
+
+The Next.js app listens for WebSocket events and dynamically renders the document with highlighted text.
