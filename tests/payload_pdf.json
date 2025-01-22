@@ -1,0 +1,13 @@
+{
+    "data": {
+        "File_URL__c": {
+        "string": "http://localhost:3000/salesforce_knowledge_implementation_guide.pdf"
+        },
+        "Chunk__c": {
+        "string": "You can use Knowledge in both Salesforce Classic and Lightning Experience."
+        },
+        "Session_ID__c": {
+        "string": "12345"
+        }
+    }
+}  

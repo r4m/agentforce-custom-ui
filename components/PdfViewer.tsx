@@ -1,11 +1,13 @@
 "use client";
 
+import "bootstrap/dist/css/bootstrap.min.css";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useState, useEffect, useCallback, useRef } from "react";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import io from "socket.io-client";
 import FancyLoading from "./FancyLoading";
+import Fuse from "fuse.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -42,20 +44,81 @@ const PdfViewer = () => {
     };
   }, []);
 
+  const normalizeText = (text: string): string =>
+    text
+      .toLowerCase()
+      .replace(/\s+/g, " ") // Rimuove spazi multipli
+      .replace(/[‘’]/g, "'") // Sostituisce apostrofi stilizzati
+      .replace(/[“”]/g, '"') // Sostituisce virgolette stilizzate
+      .trim(); // Rimuove spazi iniziali e finali
+
   const searchAndHighlightTextHtml = useCallback(() => {
     if (pdfData.fileContent && pdfData.chunk) {
-      const escapedChunk = pdfData.chunk.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape regex
-      const regex = new RegExp(`(${escapedChunk})`, "gi");
-      const highlightedHtml = pdfData.fileContent.replace(
-        regex,
-        `<mark style="background-color: yellow;">$1</mark>`
-      );
-      return highlightedHtml;
+      const container = document.createElement("div");
+      container.innerHTML = pdfData.fileContent;
+  
+      // Normalizza il testo
+      const normalizedChunk = normalizeText(pdfData.chunk);
+      const extractTextWithIndices = (node: Node): string => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return normalizeText(node.nodeValue || "");
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
+          return Array.from(node.childNodes).map(extractTextWithIndices).join(" ");
+        }
+        return "";
+      };
+  
+      const plainText = extractTextWithIndices(container);
+      console.log("plainText", plainText);
+      console.log("normalizedChunk", normalizedChunk);
+  
+      // Usa Fuse.js per una ricerca fuzzy
+      const fuse = new Fuse([plainText], {
+        includeMatches: true,
+        threshold: 0.6,
+        minMatchCharLength: 30,
+      });
+  
+      const results = fuse.search(normalizedChunk);
+  
+      if (results.length > 0) {
+        const matches = results[0].matches || [];
+        matches.forEach(({ indices }) => {
+          indices.forEach(([start, end]) => {
+            let currentOffset = 0;
+  
+            // Evidenzia i nodi corrispondenti
+            const highlightNodes = (node: Node) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.nodeValue || "";
+                const length = text.length;
+  
+                if (start >= currentOffset && end <= currentOffset + length) {
+                  const range = document.createRange();
+                  range.setStart(node, start - currentOffset);
+                  range.setEnd(node, end - currentOffset);
+  
+                  const mark = document.createElement("hl");
+                  mark.className = "bg-warning text-dark";
+                  range.surroundContents(mark);
+                }
+                currentOffset += length;
+              } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
+                node.childNodes.forEach(highlightNodes);
+              }
+            };
+  
+            highlightNodes(container);
+          });
+        });
+      }
+  
+      return container.innerHTML;
     }
     return pdfData.fileContent;
   }, [pdfData.fileContent, pdfData.chunk]);
-
-  const searchAndHighlightTextPdf = useCallback(async (text: string) => {
+  
+  const searchAndHighlightTextPdf = useCallback(async () => {
     const pdf = await pdfjs.getDocument(pdfData.fileUrl).promise;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
@@ -64,20 +127,20 @@ const PdfViewer = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((item: any) => item.str)
         .join(" ");
-      if (textItems.includes(text)) {
+      if (textItems.includes(pdfData.chunk)) {
         setPageNumber(i);
-        setHighlightedText(text);
+        setHighlightedText(pdfData.chunk);
         break;
       }
     }
-  }, [pdfData.fileUrl]);
+  }, [pdfData.chunk, pdfData.fileUrl]);
 
   useEffect(() => {
     if (pdfData.chunk) {
       if (pdfData.fileContent) {
         searchAndHighlightTextHtml();
       } else if (pdfData.fileUrl) {
-        searchAndHighlightTextPdf(pdfData.chunk);
+        searchAndHighlightTextPdf();
       }
     }
   }, [pdfData.chunk, pdfData.fileContent, pdfData.fileUrl, searchAndHighlightTextHtml, searchAndHighlightTextPdf]);
@@ -126,12 +189,16 @@ const PdfViewer = () => {
   };
 
   return pdfData.fileContent ? (
-    <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
-      <div
-        className="overflow-auto border rounded-lg p-4 bg-white"
-        style={{ height: "600px", width: "100%" }}
-        dangerouslySetInnerHTML={{ __html: searchAndHighlightTextHtml() || "" }}
-      />
+    <div className="flex flex-col items-start p-4 rounded-lg">
+       <div
+        className="overflow-auto border rounded p-3 bg-light shadow"
+        style={{
+          height: "800px",
+          width: "140%",
+        }}
+      >
+        <div dangerouslySetInnerHTML={{ __html: searchAndHighlightTextHtml() || "" }} />
+      </div>
     </div>
   ) : pdfData.fileUrl ? (
     <div className="flex flex-col items-start p-4 bg-gray-100 rounded-lg shadow-md">
