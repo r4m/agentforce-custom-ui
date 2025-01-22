@@ -34,3 +34,17 @@ body {
     transform: scale(1.1);
   }
 }
+
+ul {
+  list-style-type: disc; /* Mostra i bullet points */
+  padding-left: 2rem;   /* Aggiunge spazio prima degli elementi della lista */
+}
+
+ol {
+  list-style-type: decimal; /* Mostra i numeri nelle liste ordinate */
+  padding-left: 2rem;       /* Aggiunge spazio prima degli elementi della lista */
+}
+
+li {
+  margin-bottom: 0.5rem; /* Aggiunge spazio tra gli elementi della lista */
+}
