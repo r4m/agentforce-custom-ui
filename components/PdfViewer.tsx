@@ -51,6 +51,12 @@ const PdfViewer = () => {
       .replace(/[‘’]/g, "'") 
       .replace(/[“”]/g, '"') 
       .trim();
+    
+  const extractText = (html: string) => {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent || tempDiv.innerText || "";
+  };
 
   const searchAndHighlightTextHtml = useCallback(() => {
     if (pdfData.fileContent && pdfData.chunk) {
@@ -58,47 +64,57 @@ const PdfViewer = () => {
       container.innerHTML = pdfData.fileContent;
   
       const normalizedChunk = normalizeText(pdfData.chunk);
-      const normalizedContent = normalizeText(pdfData.fileContent);
-      
-      if (normalizedContent.includes(normalizedChunk)) {
-        const startIndex = normalizedContent.indexOf(normalizedChunk);
-        if (startIndex !== -1) {
-          const endIndex = startIndex + normalizedChunk.length;
-    
-          let currentOffset = 0;
-    
-          const highlightNodes = (node: Node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              const text = node.nodeValue || "";
-              const length = text.length;
-    
-              if (
-                currentOffset <= startIndex &&
-                currentOffset + length >= startIndex
-              ) {
-                const range = document.createRange();
-              
-                const relativeStart = Math.max(0, startIndex - currentOffset);
-                const relativeEnd = Math.min(length, endIndex - currentOffset);
-              
-                range.setStart(node, relativeStart);
-                range.setEnd(node, relativeEnd);
-              
-                const highlight = document.createElement("hl");
-                highlight.className = "bg-warning text-dark";
-                range.surroundContents(highlight);
-              }
-                  
-              currentOffset += length;
-            } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
-              node.childNodes.forEach(highlightNodes);
-            }
-          };
-    
-          highlightNodes(container);
-    
-          return container.innerHTML;
+
+      if (pdfData.fileContent.includes(pdfData.chunk)) {
+        const plainContent = extractText(pdfData.fileContent);
+        const plainChunk = extractText(pdfData.chunk);
+
+        const startIndex = plainContent.indexOf(plainChunk);
+        if (startIndex === -1) {
+          console.log("Chunk not found in content");
+          return pdfData.fileContent;
         }
+
+        const endIndex = startIndex + plainChunk.length;
+        let currentOffset = 0;
+
+        const highlightNodes = (node: Node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.nodeValue?.trim(); // Rimuove spazi
+            if (!text) {
+              currentOffset += node.nodeValue?.length || 0;
+              return; // Salta nodi vuoti
+            }
+            const length = text.length;
+
+            if (currentOffset <= startIndex && currentOffset + length >= startIndex) {
+              const range = document.createRange();
+
+              const relativeStart = Math.max(0, startIndex - currentOffset);
+              const relativeEnd = Math.min(length, endIndex - currentOffset);
+
+              range.setStart(node, relativeStart);
+              range.setEnd(node, relativeEnd);
+
+              const highlight = document.createElement("hl");
+              highlight.className = "bg-warning text-dark";
+              range.surroundContents(highlight);
+
+              console.log("Highlight applied");
+            }
+
+            currentOffset += length;
+          } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
+            node.childNodes.forEach(highlightNodes);
+          }
+        };
+
+        const container = document.createElement("div");
+        container.innerHTML = pdfData.fileContent;
+
+        highlightNodes(container);
+
+        return container.innerHTML;        
       }
 
       const extractTextWithIndices = (node: Node): string => {
