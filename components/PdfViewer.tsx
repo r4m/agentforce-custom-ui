@@ -75,7 +75,7 @@ const PdfViewer = () => {
           return pdfData.fileContent;
         }
 
-        const endIndex = startIndex + plainChunk.length;
+        const endIndex = startIndex + plainChunk.length;      
         let currentOffset = 0;
 
         const highlightNodes = (node: Node) => {
@@ -86,35 +86,38 @@ const PdfViewer = () => {
               return; // Salta nodi vuoti
             }
             const length = text.length;
-
-            if (currentOffset <= startIndex && currentOffset + length >= startIndex) {
+      
+            if (
+              currentOffset + length > startIndex &&
+              currentOffset < endIndex
+            ) {
               const range = document.createRange();
-
+      
               const relativeStart = Math.max(0, startIndex - currentOffset);
               const relativeEnd = Math.min(length, endIndex - currentOffset);
-
+      
               range.setStart(node, relativeStart);
               range.setEnd(node, relativeEnd);
-
+      
               const highlight = document.createElement("hl");
               highlight.className = "bg-warning text-dark";
               range.surroundContents(highlight);
-
-              console.log("Highlight applied");
+      
+              console.log("Highlight applied from:", relativeStart, "to:", relativeEnd);
             }
-
+      
             currentOffset += length;
           } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
-            node.childNodes.forEach(highlightNodes);
+            Array.from(node.childNodes).forEach(highlightNodes);
           }
         };
 
-        const container = document.createElement("div");
-        container.innerHTML = pdfData.fileContent;
-
-        highlightNodes(container);
-
-        return container.innerHTML;        
+        const contentContainer = document.createElement("div"); // Rinomina per evitare conflitti
+        contentContainer.innerHTML = pdfData.fileContent;
+      
+        highlightNodes(contentContainer);
+      
+        return contentContainer.innerHTML;      
       }
 
       const extractTextWithIndices = (node: Node): string => {
