@@ -67,7 +67,7 @@ const PdfViewer = () => {
     
           let currentOffset = 0;
     
-          const highlightNodes = (node) => {
+          const highlightNodes = (node: Node) => {
             if (node.nodeType === Node.TEXT_NODE) {
               const text = node.nodeValue || "";
               const length = text.length;
