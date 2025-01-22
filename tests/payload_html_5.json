@@ -1,0 +1,32 @@
+{
+    "specversion": "1.0",
+    "id": "d6754f6a-b394-4a45-bb5a-29c09df1d795",
+    "source": "",
+    "type": "",
+    "subject": "/event/Agentforce_RAG_Response_Event__e",
+    "datacontenttype": "application/json",
+    "data": {
+      "Chunk__c": {
+        "string": "<b>Final Checks</b><br>Your installer should perform final electrical safety and performance checks before commissioning the system, and provide you with the necessary documentation (manuals, warranties, maintenance information)."
+      },
+      "Conversation_ID__c": {
+        "string": ""
+      },
+      "CreatedById": "005J6000001iNYVIA2",
+      "CreatedDate": 1737548301594,
+      "File_Content__c": {
+        "string": "<p><b>Wind Turbine Installation Guide</b></p>\n<p>Harnessing renewable energy sources has become increasingly important in our quest for sustainable living. One efficient way to contribute to this effort is by installing a small-scale wind turbine. These turbines can provide clean energy for homes, cabins, or even small businesses. Here's a brief guide on how to install a wind turbine under 300 words.<br><br><b><b>Wind Turbine Project Stages Chart (<a href=\"http://www.renewableenergyhub.co.uk/images/design/pages/Wind%20Turbine%20-%20Project%20Stages.jpg\" target=\"_blank\">Click to enlarge</a>)</b></b></p>\n<p><img src=\"https://www.renewableenergyhub.co.uk/images/design/pages/Wind%20Turbine%20-%20Project%20Stages.jpg\" style=\"width: 972px; height: 368px; display: block; margin-left: auto; margin-right: auto;\"></img></p>\n<p> </p>\n<p>For the final stage of the process, installation will comprise at least the following steps:<br><br><strong>Foundation Preparation and Installation</strong><br>Depending on the size and type of turbine system, this may require heavy machinery such as an excavator and crane. It is usually necessary to wait for a period of at least 2 weeks after the laying of foundations in order to allow the concrete base to cure. If a building-mounted system is being installed, it may be necessary to have your property’s roof strengthened so that it can bear the weight of the turbine.<br><br><b>Digging of Trenches</b><br>Trenches need to be dug for the electrical cables which run from the turbine to the control unit and inverter.<br><br><b>Erection of Tower and Turbine</b><br>Depending on the turbine size, this may require use of a crane.<br><br><b>Electrical Wiring</b><br>An electrical engineer or electrician will connect the wind turbines DC output to the control box and then the inverter. The AC output from the inverter will be connected to your property’s electricity supply and the electricity grid. Other electrical components such as isolators are installed for safety, and an approved generation meter will be placed after the inverter.<br><br><b>Connection to Electricity Grid</b><br>In order to connect the wind turbine system to the grid, your installer will liaise with your local utility company or state representative.<br><br><b>Final Checks</b><br>Your installer should perform final electrical safety and performance checks before commissioning the system, and provide you with the necessary documentation (manuals, warranties, maintenance information).<br><br>Find out more about <a href=\"https://www.renewableenergyhub.us/renewable-energy-incentives-for-the-usa.html\" target=\"_blank\">incentives for wind turbines in your area</a>.</p>\n<div style=\"\"> </div>\n<div style=\"text-align: center;\"></div>\n<div id=\"\" style=\"\"> </div>\n<div id=\"\" style=\"\"> </div>\n<div id=\"\" style=\"\"> </div>"
+      },
+      "File_URL__c": {
+        "string": "b34eb474-e08d-4437-8fc5-48fe28a89e0c"
+      },
+      "Session_ID__c": {
+        "string": ""
+      },
+      "User_ID__c": {
+        "string": ""
+      }
+    },
+    "salesforcereplayid": "AAAAAAAZHSAAAA=="
+  }
+  
