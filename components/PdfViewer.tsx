@@ -47,17 +47,16 @@ const PdfViewer = () => {
   const normalizeText = (text: string): string =>
     text
       .toLowerCase()
-      .replace(/\s+/g, " ") // Rimuove spazi multipli
-      .replace(/[‘’]/g, "'") // Sostituisce apostrofi stilizzati
-      .replace(/[“”]/g, '"') // Sostituisce virgolette stilizzate
-      .trim(); // Rimuove spazi iniziali e finali
+      .replace(/\s+/g, " ")
+      .replace(/[‘’]/g, "'") 
+      .replace(/[“”]/g, '"') 
+      .trim();
 
   const searchAndHighlightTextHtml = useCallback(() => {
     if (pdfData.fileContent && pdfData.chunk) {
       const container = document.createElement("div");
       container.innerHTML = pdfData.fileContent;
   
-      // Normalizza il testo
       const normalizedChunk = normalizeText(pdfData.chunk);
       const extractTextWithIndices = (node: Node): string => {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -69,10 +68,7 @@ const PdfViewer = () => {
       };
   
       const plainText = extractTextWithIndices(container);
-      console.log("plainText", plainText);
-      console.log("normalizedChunk", normalizedChunk);
   
-      // Usa Fuse.js per una ricerca fuzzy
       const fuse = new Fuse([plainText], {
         includeMatches: true,
         threshold: 0.6,
@@ -87,7 +83,6 @@ const PdfViewer = () => {
           indices.forEach(([start, end]) => {
             let currentOffset = 0;
   
-            // Evidenzia i nodi corrispondenti
             const highlightNodes = (node: Node) => {
               if (node.nodeType === Node.TEXT_NODE) {
                 const text = node.nodeValue || "";

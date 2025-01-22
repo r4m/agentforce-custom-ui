@@ -29,7 +29,7 @@ app.prepare().then(() => {
         const event = JSON.parse(body);
         const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = event.data;
 
-        console.log("Event received:", event);
+        console.log("Heroku event received:", event);
 
         io.emit("pdf-update", {
           fileUrl: File_URL__c?.string,
@@ -106,7 +106,7 @@ app.prepare().then(() => {
   });
 
   sfIo.on("connection", (socket) => {
-    console.log("Connessioni attive su Salesforce namespace:", sfIo.sockets.size);
+    console.log("Active connections on Salesforce namespace:", sfIo.sockets.size);
   });
   
   // Function to generate access token
