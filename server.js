@@ -20,16 +20,20 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
 
     if (req.url === "/emit-heroku-event" && req.method === "POST") {
+      console.log("Heroku event received");
+
       let body = "";
       req.on("data", (chunk) => {
         body += chunk.toString();
       });
 
       req.on("end", () => {
+        console.log("Heroku event parsing...");
+
         const event = JSON.parse(body);
         const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = event.data;
 
-        console.log("Heroku event received:", event);
+        console.log("...done. Heroku event is ", event);
 
         io.emit("pdf-update", {
           fileUrl: File_URL__c?.string,
@@ -108,7 +112,7 @@ app.prepare().then(() => {
   sfIo.on("connection", (socket) => {
     console.log("Active connections on Salesforce namespace:", sfIo.sockets.size);
   });
-  
+
   // Function to generate access token
   async function generateAccessToken() {
     try {
