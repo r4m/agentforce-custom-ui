@@ -58,6 +58,49 @@ const PdfViewer = () => {
       container.innerHTML = pdfData.fileContent;
   
       const normalizedChunk = normalizeText(pdfData.chunk);
+      const normalizedContent = normalizeText(pdfData.fileContent);
+      
+      if (normalizedContent.includes(normalizedChunk)) {
+        const startIndex = normalizedContent.indexOf(normalizedChunk);
+        if (startIndex !== -1) {
+          const endIndex = startIndex + normalizedChunk.length;
+    
+          let currentOffset = 0;
+    
+          const highlightNodes = (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.nodeValue || "";
+              const length = text.length;
+    
+              if (
+                currentOffset <= startIndex &&
+                currentOffset + length >= startIndex
+              ) {
+                const range = document.createRange();
+              
+                const relativeStart = Math.max(0, startIndex - currentOffset);
+                const relativeEnd = Math.min(length, endIndex - currentOffset);
+              
+                range.setStart(node, relativeStart);
+                range.setEnd(node, relativeEnd);
+              
+                const highlight = document.createElement("hl");
+                highlight.className = "bg-warning text-dark";
+                range.surroundContents(highlight);
+              }
+                  
+              currentOffset += length;
+            } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
+              node.childNodes.forEach(highlightNodes);
+            }
+          };
+    
+          highlightNodes(container);
+    
+          return container.innerHTML;
+        }
+      }
+
       const extractTextWithIndices = (node: Node): string => {
         if (node.nodeType === Node.TEXT_NODE) {
           return normalizeText(node.nodeValue || "");
@@ -111,7 +154,7 @@ const PdfViewer = () => {
       return container.innerHTML;
     }
     return pdfData.fileContent;
-  }, [pdfData.fileContent, pdfData.chunk]);
+  }, [pdfData.fileContent, pdfData.chunk]);     
   
   const searchAndHighlightTextPdf = useCallback(async () => {
     const pdf = await pdfjs.getDocument(pdfData.fileUrl).promise;
