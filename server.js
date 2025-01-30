@@ -5,6 +5,10 @@ import { Server } from "socket.io";
 import axios from "axios";
 import { EventSourcePolyfill } from "event-source-polyfill";
 import { v4 as uuidv4 } from "uuid";
+import express from "express";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -15,43 +19,61 @@ const PORT = process.env.PORT || 3000;
 const sessionStore = new Map(); // Temporary in-memory session store
 
 app.prepare().then(() => {
+  const expressApp = express();
+  expressApp.use(express.json());
 
-  const server = createServer((req, res) => {
-    const parsedUrl = parse(req.url, true);
-
-    if (req.url === "/emit-heroku-event" && req.method === "POST") {
-      console.log("Heroku event received");
-
-      let body = "";
-      req.on("data", (chunk) => {
-        body += chunk.toString();
-      });
-
-      req.on("end", () => {
-        console.log("Heroku event parsing...");
-
-        const event = JSON.parse(body);
-        const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = event.data;
-
-        console.log("...done. Heroku event is ", event);
-
-        io.emit("pdf-update", {
-          fileUrl: File_URL__c?.string,
-          fileContent: File_Content__c?.string,
-          chunk: Chunk__c?.string,
-          sessionId: Session_ID__c?.string,
-        });
-
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true }));
-      });
-
-      return;
-    }
-
-    handle(req, res, parsedUrl);
+  // Define storage for uploaded files
+  const storage = multer.diskStorage({
+    destination: "./uploads", // Save files in the "uploads" folder
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${file.originalname}`);
+    },
   });
 
+  const upload = multer({ storage });
+
+  // Serve static files so they can be accessed publicly
+  expressApp.use("/uploads", express.static("uploads"));
+
+  // Route to handle file uploads
+  expressApp.post("/uploadFile", upload.single("file"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Construct the file's URL so it can be accessed later
+    const fileUrl = `${process.env.NEXT_PUBLIC_DOMAIN_PRODUCTION || "http://localhost:" + PORT}/uploads/${req.file.filename}`;
+
+    console.log("File uploaded:", fileUrl);
+
+    res.json({
+      message: "File uploaded successfully",
+      fileUrl: fileUrl,
+    });
+  });
+
+  const server = createServer(expressApp);
+
+  expressApp.post("/emit-heroku-event", (req, res) => {
+    console.log("Heroku event received:", req.body);
+
+    console.log("Heroku event parsing...");
+    const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = req.body.data;
+    console.log("...done. Heroku event is ", req.body.data);
+
+    io.emit("pdf-update", {
+      fileUrl: File_URL__c?.string,
+      fileContent: File_Content__c?.string,
+      chunk: Chunk__c?.string,
+      sessionId: Session_ID__c?.string,
+    });
+    res.json({ success: true });
+  });
+
+  expressApp.all("*", (req, res) => {
+    return handle(req, res);
+  });
+  
   const io = new Server(server, {
     cors: {
       origin: !dev ? process.env.NEXT_PUBLIC_DOMAIN_PRODUCTION : process.env.NEXT_PUBLIC_DOMAIN_LOCAL,
@@ -109,7 +131,7 @@ app.prepare().then(() => {
     });
   });
 
-  sfIo.on("connection", (socket) => {
+  sfIo.on("connection", () => {
     console.log("Active connections on Salesforce namespace:", sfIo.sockets.size);
   });
 
@@ -170,7 +192,7 @@ app.prepare().then(() => {
         throw new Error("Access token missing for session");
       }
 
-      await axios.post(
+      const response = await axios.post(
         `${process.env.NEXT_PUBLIC_SF_URL}/iamessage/api/v2/conversation/${conversationId}/message`,
         {
           message: {
@@ -187,7 +209,7 @@ app.prepare().then(() => {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      console.log('Message sent to Salesforce.');
+      console.log('Message sent to Salesforce.', response);
     } catch (error) {
       if (error.message === 'Access token missing for session') {
         try {
