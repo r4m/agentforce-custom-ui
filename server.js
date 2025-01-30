@@ -156,12 +156,14 @@ app.prepare().then(() => {
       return response;
     } catch (error) {
       console.error("Failed to create conversation:", error);
+      sfIo.emit("internal", {type: "error", data: {content: "Failed to create conversion: " + error.message}});
       return null;
     }
   }
 
   // Function to send a message
   async function sendMessage(sessionId, content) {
+    console.log('Sending message to Salesforce:', content);
     try {
       const { accessToken, conversationId } = sessionStore.get(sessionId) || {};
       if (!accessToken) {
@@ -185,10 +187,22 @@ app.prepare().then(() => {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      console.log('Message sent to Salesforce:', content);
+      console.log('Message sent to Salesforce.');
+    } catch (error) {
+      if (error.message === 'Access token missing for session') {
+        try {
+          const { accessToken, lastEventId } = await generateAccessToken();
+          sessionStore.set(sessionId, { accessToken, lastEventId });
 
-    } catch (err) {
-      console.error("Failed to send message to Salesforce:", err);
+          await sendMessage(sessionId, content);
+        } catch (tokenError) {
+          console.error('Failed to refresh access token and resend message to Salesforce:', tokenError.message);
+          sfIo.emit("internal", {type: "error", data: {content: "Failed to send message to Salesforce: " + tokenError.message}});
+        }
+      } else {
+        console.error("Failed to send message to Salesforce:", error);
+        sfIo.emit("internal", {type: "error", data: {content: "Failed to send message to Salesforce: " + error.message}});
+      }
     }
   }
 
