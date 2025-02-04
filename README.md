@@ -37,3 +37,15 @@ The server emits the data via WebSockets to the Next.js frontend.
 5. Real-Time Document Rendering:
 
 The Next.js app listens for WebSocket events and dynamically renders the document with highlighted text.
+
+## Local testing
+
+You can test Heroku events via the following command:
+
+curl -X POST "http://localhost:3000/emit-heroku-event" \
+     -H "Content-Type: application/json" \
+     --data "@tests/payload_html_5.json"
+
+## Customer journey test
+
+1. The user ask in the chat which is the return policy `what is your return policy?`
