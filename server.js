@@ -61,9 +61,9 @@ app.prepare().then(() => {
 
     if (subject === "/event/Agentforce_Case_Creation_Event__e") {
       console.log("Heroku event parsing...");
-      const { Case_ID__c, External_ID__c } = req.body.data;
+      const { Case_ID__c, Case_Number__c } = req.body.data;
       const lastConversationId = [...sessionStore.keys()].pop();
-      caseStore.set(lastConversationId, {caseId: Case_ID__c, externalId: External_ID__c});
+      caseStore.set(lastConversationId, {caseId: Case_ID__c?.string, caseNumber: Case_Number__c?.string});
       console.log("...done. Heroku event is ", req.body.data);
       console.log("Case ID is ", caseStore.get(lastConversationId));
       console.log("Case ID had been attached to conversation ", lastConversationId);
@@ -226,7 +226,7 @@ app.prepare().then(() => {
       if (type === "StaticContentLinks") {
         staticContent = {
           "formatType": "Text",
-          "text":  `Please attach the following file '${content.name}' of type ${content.type} and url '${content.url}' to case with id ${caseStore.get(conversationId)?.caseId} and case number ${caseStore.get(conversationId)?.externalId}`,
+          "text":  `Please attach the following file '${content.name}' of type ${content.type} and url '${content.url}' to case with id ${caseStore.get(conversationId)?.caseId} and case number ${caseStore.get(conversationId)?.caseNumber}`,
         }
       } else {
         staticContent = {
