@@ -14,6 +14,62 @@ const CrispChat: React.FC = () => {
     sessionInitialized.current = false;
   }
 
+  function showLoadingMessage() {
+    const lastHsov5Div = document.querySelectorAll('.cc-hsov5');
+    const lastDiv = lastHsov5Div[lastHsov5Div.length - 1];
+
+    if (lastDiv) {
+      const newDiv = document.createElement('div');
+      newDiv.className = 'loading-message';
+      newDiv.innerHTML = `
+        <span style="
+              padding: 8px 14px !important;
+              font-size: 12.6px !important;
+              display: flex !important;
+              align-items: center !important;
+            ">
+          The Agent will respond shortly, please wait
+          <span class="loader" style="display: flex !important; align-items: center !important; margin-left: 5px !important;">
+            <span class="dot" style="margin-left: 2px !important;">.</span>
+            <span class="dot" style="margin-left: 2px !important;">.</span>
+            <span class="dot" style="margin-left: 2px !important;">.</span>
+          </span>
+        </span>
+      `;
+
+      const style = document.createElement('style');
+      style.innerHTML = `
+        .dot {
+          animation: blink 1.4s infinite both;
+          font-size: 12.6px !important;
+          color: rgb(255, 255, 255) !important;
+        }
+        .dot:nth-child(1) {
+          animation-delay: 0s;
+        }
+        .dot:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        .dot:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+        @keyframes blink {
+          0% {
+            opacity: 0;
+          }
+          20% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      lastDiv.parentNode?.insertBefore(newDiv, lastDiv.nextSibling);
+    }
+  }
+  
   useEffect(() => {
     const savedConversationId = localStorage.getItem('conversationId');
     if (savedConversationId) {
@@ -49,64 +105,21 @@ const CrispChat: React.FC = () => {
     // Listen for user messages
     Crisp.message.onMessageSent((data: { type: string; content: string }) => {
       console.log("Message received:", data);
+      
       if (data.type === "text") {
         console.log("User message sent:", data.content);
         const sessionId = Crisp.session.getIdentifier();
         socketConnection.emit("send-message", { sessionId, content: data.content });
 
-        const lastHsov5Div = document.querySelectorAll('.cc-hsov5');
-        const lastDiv = lastHsov5Div[lastHsov5Div.length - 1];
+        showLoadingMessage();
+      }
 
-        if (lastDiv) {
-          const newDiv = document.createElement('div');
-          newDiv.className = 'loading-message';
-          newDiv.innerHTML = `
-            <span style="
-                  padding: 8px 14px !important;
-                  font-size: 12.6px !important;
-                  display: flex !important;
-                  align-items: center !important;
-                ">
-              The Agent will respond shortly, please wait
-              <span class="loader" style="display: flex !important; align-items: center !important; margin-left: 5px !important;">
-                <span class="dot" style="margin-left: 2px !important;">.</span>
-                <span class="dot" style="margin-left: 2px !important;">.</span>
-                <span class="dot" style="margin-left: 2px !important;">.</span>
-              </span>
-            </span>
-          `;
+      if (data.type === "file") {
+        console.log("User message sent:", data.content);
+        const sessionId = Crisp.session.getIdentifier();
+        socketConnection.emit("send-file", { sessionId, content: data.content });
 
-          const style = document.createElement('style');
-          style.innerHTML = `
-            .dot {
-              animation: blink 1.4s infinite both;
-              font-size: 12.6px !important;
-              color: rgb(255, 255, 255) !important;
-            }
-            .dot:nth-child(1) {
-              animation-delay: 0s;
-            }
-            .dot:nth-child(2) {
-              animation-delay: 0.2s;
-            }
-            .dot:nth-child(3) {
-              animation-delay: 0.4s;
-            }
-            @keyframes blink {
-              0% {
-                opacity: 0;
-              }
-              20% {
-                opacity: 1;
-              }
-              100% {
-                opacity: 0;
-              }
-            }
-          `;
-          document.head.appendChild(style);
-          lastDiv.parentNode?.insertBefore(newDiv, lastDiv.nextSibling);
-        }
+        showLoadingMessage();
       }
     });
 

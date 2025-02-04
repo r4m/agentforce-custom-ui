@@ -1,14 +1,11 @@
 import { createServer } from "http";
-import { parse } from "url";
 import next from "next";
 import { Server } from "socket.io";
 import axios from "axios";
 import { EventSourcePolyfill } from "event-source-polyfill";
 import { v4 as uuidv4 } from "uuid";
 import express from "express";
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
+import { v2 as cloudinary } from "cloudinary";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -17,39 +14,41 @@ const handle = app.getRequestHandler();
 const PORT = process.env.PORT || 3000;
 
 const sessionStore = new Map(); // Temporary in-memory session store
+const caseStore = new Map();
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 app.prepare().then(() => {
   const expressApp = express();
   expressApp.use(express.json());
 
-  // Define storage for uploaded files
-  const storage = multer.diskStorage({
-    destination: "./uploads", // Save files in the "uploads" folder
-    filename: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
-    },
-  });
-
-  const upload = multer({ storage });
-
-  // Serve static files so they can be accessed publicly
-  expressApp.use("/uploads", express.static("uploads"));
-
   // Route to handle file uploads
-  expressApp.post("/uploadFile", upload.single("file"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+  expressApp.post("/uploadFile", async (req, res) => {
+    try {
+      if (!req.files || !req.files.image) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+  
+      const file = req.files.image;
+  
+      // Upload and resize the image to max width 800px
+      const result = await cloudinary.uploader.upload(file.tempFilePath, {
+        folder: "agentforce_cases",
+        width: 800,
+        height: 800,
+        crop: "limit", // Resize without distorting
+      });
+  
+      return res.json({ fileUrl: result.secure_url });
+    } catch (error) {
+      console.error("Upload error:", error);
+      return res.status(500).json({ error: "File upload failed" });
     }
-
-    // Construct the file's URL so it can be accessed later
-    const fileUrl = `${process.env.NEXT_PUBLIC_DOMAIN_PRODUCTION || "http://localhost:" + PORT}/uploads/${req.file.filename}`;
-
-    console.log("File uploaded:", fileUrl);
-
-    res.json({
-      message: "File uploaded successfully",
-      fileUrl: fileUrl,
-    });
   });
 
   const server = createServer(expressApp);
@@ -57,23 +56,45 @@ app.prepare().then(() => {
   expressApp.post("/emit-heroku-event", (req, res) => {
     console.log("Heroku event received:", req.body);
 
-    console.log("Heroku event parsing...");
-    const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = req.body.data;
-    console.log("...done. Heroku event is ", req.body.data);
+    const { subject } = req.body;
+    console.log(subject);
 
-    io.emit("pdf-update", {
-      fileUrl: File_URL__c?.string,
-      fileContent: File_Content__c?.string,
-      chunk: Chunk__c?.string,
-      sessionId: Session_ID__c?.string,
-    });
+    if (subject === "/event/Agentforce_Case_Creation_Event__e") {
+      console.log("Heroku event parsing...");
+      const { Case_ID__c, External_ID__c } = req.body.data;
+      const lastConversationId = [...sessionStore.keys()].pop();
+      caseStore.set(lastConversationId, {caseId: Case_ID__c, externalId: External_ID__c});
+      console.log("...done. Heroku event is ", req.body.data);
+      console.log("Case ID is ", caseStore.get(lastConversationId));
+      console.log("Case ID had been attached to conversation ", lastConversationId);
+
+      // io.emit("pdf-update", {
+      //   fileUrl: File_URL__c?.string,
+      //   fileContent: File_Content__c?.string,
+      //   chunk: Chunk__c?.string,
+      //   sessionId: Session_ID__c?.string,
+      // });
+    }
+
+    if (subject === "/event/Agentforce_RAG_Response_Event__e") {
+      console.log("Heroku event parsing...");
+      const { File_URL__c, File_Content__c, Chunk__c, Session_ID__c } = req.body.data;
+      console.log("...done. Heroku event is ", req.body.data);
+
+      io.emit("pdf-update", {
+        fileUrl: File_URL__c?.string,
+        fileContent: File_Content__c?.string,
+        chunk: Chunk__c?.string,
+        sessionId: Session_ID__c?.string,
+      });
+    }
     res.json({ success: true });
   });
 
   expressApp.all("*", (req, res) => {
     return handle(req, res);
   });
-  
+
   const io = new Server(server, {
     cors: {
       origin: !dev ? process.env.NEXT_PUBLIC_DOMAIN_PRODUCTION : process.env.NEXT_PUBLIC_DOMAIN_LOCAL,
@@ -119,7 +140,16 @@ app.prepare().then(() => {
   
     socket.on("send-message", async ({ sessionId, content }) => {
       try {
-        await sendMessage(sessionId, content);
+        await sendMessage(sessionId, "StaticContentMessage", content);
+      } catch (err) {
+        console.error("Failed to send message:", err);
+        socket.emit("internal", {type: "error", data: {content: "Failed to send message"}});
+      }
+    });
+
+    socket.on("send-file", async ({ sessionId, content }) => {
+      try {
+        await sendMessage(sessionId, "StaticContentLinks", content);
       } catch (err) {
         console.error("Failed to send message:", err);
         socket.emit("internal", {type: "error", data: {content: "Failed to send message"}});
@@ -184,12 +214,25 @@ app.prepare().then(() => {
   }
 
   // Function to send a message
-  async function sendMessage(sessionId, content) {
+  async function sendMessage(sessionId, type, content) {
     console.log('Sending message to Salesforce:', content);
     try {
       const { accessToken, conversationId } = sessionStore.get(sessionId) || {};
       if (!accessToken) {
         throw new Error("Access token missing for session");
+      }
+
+      let staticContent;
+      if (type === "StaticContentLinks") {
+        staticContent = {
+          "formatType": "Text",
+          "text":  `Please attach the following file '${content.name}' of type ${content.type} and url '${content.url}' to case with id ${caseStore.get(conversationId)?.caseId} and case number ${caseStore.get(conversationId)?.externalId}`,
+        }
+      } else {
+        staticContent = {
+          formatType: "Text",
+          text: content,
+        }
       }
 
       const response = await axios.post(
@@ -198,10 +241,7 @@ app.prepare().then(() => {
           message: {
             id: uuidv4(),
             messageType: "StaticContentMessage",
-            staticContent: {
-              formatType: "Text",
-              text: content,
-            },
+            staticContent,
           },
           esDeveloperName: process.env.NEXT_PUBLIC_SF_DEV_NAME,
           language: "en",
@@ -216,7 +256,7 @@ app.prepare().then(() => {
           const { accessToken, lastEventId } = await generateAccessToken();
           sessionStore.set(sessionId, { accessToken, lastEventId });
 
-          await sendMessage(sessionId, content);
+          await sendMessage(sessionId, type, content);
         } catch (tokenError) {
           console.error('Failed to refresh access token and resend message to Salesforce:', tokenError.message);
           sfIo.emit("internal", {type: "error", data: {content: "Failed to send message to Salesforce: " + tokenError.message}});
