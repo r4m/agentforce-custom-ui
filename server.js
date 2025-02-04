@@ -249,7 +249,7 @@ app.prepare().then(() => {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      console.log('Message sent to Salesforce.', response);
+      console.log('Message sent to Salesforce.', response?.data);
     } catch (error) {
       if (error.message === 'Access token missing for session') {
         try {
