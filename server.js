@@ -226,7 +226,7 @@ app.prepare().then(() => {
       if (type === "StaticContentLinks") {
         staticContent = {
           "formatType": "Text",
-          "text":  `Please attach the following file '${content.name}' of type ${content.type} and url '${content.url}' to case with id ${caseStore.get(conversationId)?.caseId} and case number ${caseStore.get(conversationId)?.caseNumber}`,
+          "text":  `Please attach the following file '${content.name}' of type ${content.type} and url '${content.url}' to case with id ${caseStore.get(sessionId)?.caseId} and case number ${caseStore.get(sessionId)?.caseNumber}`,
         }
       } else {
         staticContent = {

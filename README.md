@@ -48,12 +48,17 @@ curl -X POST "http://localhost:3000/emit-heroku-event" \
 
 ## Customer journey test
 
+0. The user ask for the final checks of a turbine setup `what are the final checks of a turbine setup?`
+    Agentforce replies with the detail and the app highlights the relevant chunks in the rendered KB
 1. The user ask in the chat which is the return policy `can you tell me what is your return policy?`
     Agentforce return the details of the policy
 2. The user communicate that the turbine is broken `My wind turbine is broken`
     Agentforce ask the user email
 3. The user write its email `fzanella@salesforce.com`
     Agentforce asks to create a ticket
-4. the user says `yes`
+4. The user says `yes`
+    Agentforce create a ticket
+5. The user upload a picture
+    Agentforce create a comment in the case with the link of the uploaded picture
 
 Please attach the following file 'damage.png' of type image/png and url 'https://storage.crisp.chat/users/upload/session/1df16a4576b99200/damange_19bqefn.png' to case with id 500J60000093uUaIAI"
