@@ -1,64 +1,101 @@
-# End-to-End Architecture: Real-Time Document Highlighting Using Heroku Events and Next.js
+### **Intro**
 
-## Overview
-This project demonstrates how to build a scalable, real-time, event-driven system using Heroku Events, Next.js, Salesforce Platform Events, and WebSocket communication. It integrates Salesforce, Heroku, and Data Cloud to deliver a seamless user experience by highlighting relevant portions of documents in real-time.
+#### Use Case
 
+This project seamlessly integrates AI-powered case management with picture upload, real-time document visualization, and chunk highlighting for cited knowledge in Agentforce responses. It leverages Salesforce Knowledge Base (KB), Heroku Events, and WebSockets to enhance chatbot interactivity and automate case resolution.
 
-## Use Case: Enhancing Agentforce with Real-Time Insights
-The use case augments Agentforce by providing users with:
+#### Customer Pain Points Addressed
 
-1. Real-time RAG (Retrieval-Augmented Generation) insights: Users receive contextually relevant responses with highlighted document sections.
-2. Seamless integration with Salesforce Platform Events: Automates communication between Salesforce and Heroku.
-3. Scalable, event-driven architecture: Built using Heroku's real-time eventing platform.
+⚠️ Problem 1: Users don’t trust AI-generated answers
 
+🔻 Users need to **verify the source of AI responses** before making business decisions.  
+✅ **Solution:** The web app **renders KB documents dynamically, highlighting the exact passage** used by the AI.
 
-## How It Works
+⚠️ Problem 2: Case creation is slow and manual
 
-1. User Interaction in Agentforce:
+🔻 Users **must manually submit cases via email or phone**, which delays resolution.  
+✅ **Solution:** Agentforce **automatically creates the Case and requests additional details** dynamically.
 
-- A user asks a question in Agentforce.
-- Agentforce performs a RAG operation on documents stored in Data Cloud and generates a response.
-- The response is saved in a custom Salesforce object (`Agentforce_RAG_Response__c`).
+⚠️ Problem 3: Users must manually attach files to cases
 
-2. Platform Event Trigger:
+🔻 Support teams often require **images/videos to verify product issues**, but **uploading and linking files is a manual process**.  
+✅ **Solution:** The chatbot **guides the user to upload an image**, which is **automatically attached to the Case** in Salesforce.
 
-Saving Agentforce_RAG_Response__c triggers a Salesforce Platform Event (`Agentforce_RAG_Response_Event__e`).
+---
 
-3. Heroku Events Subscription:
+### **User Flow Demonstration**
 
-A Heroku subscription listens for this platform event and processes the payload.
-The Heroku Events add-on is configured to subscribe to `Agentforce_RAG_Response_Event__e`.
+You can interact with the solution directly on the deployed web app:
 
-4. WebSocket Communication:
+🔗 **Live Demo:**  
+ 👉 [Agentforce Custom UI](https://agentforce-custom-ui-363fe3bba8ab.herokuapp.com/)
 
-The Heroku application publishes the event payload to a custom server's `/emit-heroku-event` endpoint.
-The server emits the data via WebSockets to the Next.js frontend.
+The expected user journey is as follows:
 
-5. Real-Time Document Rendering:
+1️⃣ **User Inquiry on Turbine Setup**
 
-The Next.js app listens for WebSocket events and dynamically renders the document with highlighted text.
+* The user asks: *"What are the final checks of a turbine setup?"*  
+* **Agentforce** responds with an AI-generated answer.  
+* The app dynamically highlights the relevant chunk inside the rendered KB document in real time.
 
-## Local testing
+2️⃣ **User Reports a Broken Turbine**
 
-You can test Heroku events via the following command:
+* The user states: *"My wind turbine is broken."*  
+* **Agentforce** asks the user for their email.
 
-curl -X POST "http://localhost:3000/emit-heroku-event" \
-     -H "Content-Type: application/json" \
-     --data "@tests/payload_html_5.json"
+3️⃣ **User Provides Email**
 
-## Customer journey test
+* The user enters: `bbrown@example.com`  
+* **Agentforce** confirms and asks whether the user wants to create a support case.
 
-0. The user ask for the final checks of a turbine setup `what are the final checks of a turbine setup?`
-    Agentforce replies with the detail and the app highlights the relevant chunks in the rendered KB
-1. The user ask in the chat which is the return policy `can you tell me what is your return policy?`
-    Agentforce return the details of the policy
-2. The user communicate that the turbine is broken `My wind turbine is broken`
-    Agentforce ask the user email
-3. The user write its email `fzanella@salesforce.com`
-    Agentforce asks to create a ticket
-4. The user says `yes`
-    Agentforce create a ticket
-5. The user upload a picture
-    Agentforce create a comment in the case with the link of the uploaded picture
+4️⃣ **User Confirms Case Creation**
 
-Please attach the following file 'damage.png' of type image/png and url 'https://storage.crisp.chat/users/upload/session/1df16a4576b99200/damange_19bqefn.png' to case with id 500J60000093uUaIAI"
+* The user responds: *"Yes."*  
+* **Agentforce** creates a **Salesforce Case** and notifies the user.
+
+5️⃣ **User Uploads a Picture for Inspection**
+
+* The user uploads a picture via the chat interface.  
+* **Agentforce** automatically **attaches** **the** **image** for reference to the Case.
+
+---
+
+### **Run the Solution Locally**
+
+To test and modify the solution in a local development environment:
+
+#### **1\. Clone the Repository**
+
+```
+git clone https://github.com/r4m/agentforce-custom-ui.git
+cd agentforce-custom-ui
+```
+
+#### **2\. Install Dependencies**
+
+```
+npm install
+```
+
+#### **3\. Configure Environment Variables**
+
+Create a `.env` file in the root directory with the following contents:
+
+```
+NEXT_PUBLIC_DOMAIN_PRODUCTION=https://agentforce-custom-ui-363fe3bba8ab.herokuapp.com
+NEXT_PUBLIC_DOMAIN_LOCAL=http://localhost:3000
+
+NEXT_PUBLIC_SF_ORG_ID=00DJ6000000J7qV
+NEXT_PUBLIC_SF_DEV_NAME=ESA_Web_Deployment
+NEXT_PUBLIC_SF_URL=https://storm-2a99158ebc0be3.my.salesforce-scrt.com
+
+NEXT_PUBLIC_CRISP_WEBSITE_ID=095c3ea3-a473-44d1-9485-5aff3c1477c2
+```
+
+#### **4\. Start the Development Server**
+
+```
+npm run dev
+```
+
+This will launch the application locally at [**http://localhost:3000**](http://localhost:3000/).
